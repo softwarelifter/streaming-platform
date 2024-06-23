@@ -1,0 +1,21 @@
+version: "3.8"
+services:
+  nginx:
+    build:
+      context: ./nginx
+    networks:
+      - cdn-network
+    volumes:
+      - ./content:/usr/share/nginx/html
+
+  varnish:
+    build:
+      context: ./varnish
+    networks:
+      - cdn-network
+    ports:
+      - "80:80"
+
+networks:
+  cdn-network:
+    driver: bridge
