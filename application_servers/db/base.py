@@ -50,6 +50,14 @@ class DatabaseAccessor:
         with session_scope() as session:
             return session.query(self.entity).filter_by(**kwargs).first()
 
+    def count(self, **kwargs):
+        with session_scope() as session:
+            return session.query(self.entity).filter_by(**kwargs).count()
+
+    def get_all_paginated(self, offset=0, limit=10, **kwargs):
+        with session_scope() as session:
+            return session.query(self.entity).filter_by(**kwargs).offset(offset).limit(limit).all()
+    
     def get_all(self, **kwargs):
         with session_scope() as session:
             return session.query(self.entity).filter_by(**kwargs).all()

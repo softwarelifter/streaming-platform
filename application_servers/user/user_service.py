@@ -5,7 +5,7 @@ import jwt
 import datetime
 from hashlib import sha256
 
-from application_servers.user_service.user_model import User, Address
+from application_servers.user.user_model import User, Address
 from application_servers.db.base import DatabaseAccessor
 
 
@@ -86,10 +86,55 @@ def signup():
         user_accessor.add(user)
 
         return (
-            jsonify({"message": "User created successfully", "status": "success"}),
+            jsonify({"message": "User created successfully"}),
             201,
         )
     except Exception as e:
         print(f"Error creating user: {e}")
         traceback.print_exc()
-        return jsonify({"error": "Internal server error", "status": "failure"}), 500
+        return jsonify({"error": "Internal server error"}), 500
+
+
+@user_service_bp.route("/login", methods=["POST"])
+def login():
+    try:
+        data = request.get_json()
+        if data is None:
+            return jsonify({"error": "Missing JSON data"}), 400
+
+        if "username" not in data or "password" not in data:
+            return jsonify({"error": "Missing username or password"}), 400
+
+        user_accessor = DatabaseAccessor(User)
+        user = user_accessor.get(username=data["username"])
+        if user is None:
+            return jsonify({"error": "Invalid username"}), 400
+
+        if user.password != hash_password(data["password"]):
+            return jsonify({"error": "Invalid password"}), 400
+
+        token = generate_token(user.id)
+        return jsonify({"token": token})
+    except Exception as e:
+        print(f"Error logging in user: {e}")
+        traceback.print_exc()
+        return jsonify({"error": "Internal server error"}), 500
+
+
+@user_service_bp.route("/logout", methods=["POST"])
+@auth_required
+def logout():
+    try:
+        token = request.headers.get("Authorization").split(" ")[1]
+        blacklisted_tokens.add(token)
+        return jsonify({"message": "Logged out successfully"})
+    except Exception as e:
+        print(f"Error logging out user: {e}")
+        traceback.print_exc()
+        return jsonify({"error": "Internal server error"}), 500
+
+
+@user_service_bp.route("/is_logged_in", methods=["GET"])
+@auth_required
+def is_logged_in():
+    return jsonify({"message": "User is logged in"})
